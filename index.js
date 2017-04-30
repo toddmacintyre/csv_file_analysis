@@ -29,9 +29,9 @@ Questions:
 // campaign,date,spend,impressions,actions
 
 // let campaigns = new Set();
-let campaigns = {};
 
-var csv = require("fast-csv");
+const csv = require('fast-csv');
+let campaigns = {};
 
 const main = () => {
   readFile2();
@@ -39,11 +39,8 @@ const main = () => {
 
 const readFile2 = () => {
   csv
-    .fromPath("source2.csv", {headers: true})
-    .on("data", function(data){
-      // console.log(data);
-      // added[data.campaign] = null;
-
+    .fromPath('source2.csv', {headers: true})
+    .on('data', function(data){
       if (!campaigns.hasOwnProperty(data.campaign)) {
         let split = data.campaign.split('_');
         let campaign = {
@@ -57,21 +54,21 @@ const readFile2 = () => {
           spend: 0,
           impressions: 0,
           actions: {},
+          object_type: data.object_type,
         }
         campaigns[data.campaign] = entry;
       }
     })
-    .on("end", function(){
-      console.log("done2");
-      // console.log(campaigns);
+    .on('end', function(){
+      console.log('finished reading source2.csv...');
       readFile1();
     });
 }
 
 const readFile1 = () => {
   csv
-  .fromPath("source1.csv", {headers: true})
-  .on("data", function(data){
+  .fromPath('source1.csv', {headers: true})
+  .on('data', function(data){
     if (campaigns.hasOwnProperty(data.campaign)) {
       let campaign = campaigns[data.campaign];
       if (!campaign.dates.hasOwnProperty(data.date)) {
@@ -79,7 +76,7 @@ const readFile1 = () => {
         campaign.spend += Number(data.spend);
         campaign.impressions += Number(data.impressions);
         JSON.parse(data.actions).forEach(entry => {
-          if (entry.hasOwnProperty("x") || entry.hasOwnProperty("y")) {
+          if (entry.hasOwnProperty('x') || entry.hasOwnProperty('y')) {
             campaign.actions[entry.action] = Number(campaign.actions[entry.action]) + 1 || 1;
           }
         });
@@ -97,10 +94,11 @@ const readFile1 = () => {
         spend: Number(data.spend),
         impressions: Number(data.impressions),
         actions: {},
+        object_type: 'N/A',
       }
       campaigns[data.campaign] = entry;
       JSON.parse(data.actions).forEach(entry => {
-        if (entry.hasOwnProperty("x") || entry.hasOwnProperty("y")) {
+        if (entry.hasOwnProperty('x') || entry.hasOwnProperty('y')) {
           // console.log(entry);
           // if (!campaigns[data.campaign].actions.hasOwnProperty(entry.action)) {
           //   campaigns[data.campaign].actions[entry.action] = 1;
@@ -113,17 +111,21 @@ const readFile1 = () => {
     }
   })
   .on("end", function(){
-    console.log("done1");
+    console.log('finished reading source1.csv...');
     analyze();
   });
 }
 
 const analyze = () => {
-  console.log('analyzing');
+  console.log('analyzing...');
 
+
+  // Q1:
   console.log('\nQ: 1. How many unique campaigns ran in February?');
   console.log(`A: ${Object.keys(campaigns).length}`); // 233
 
+
+  // Q2:
   console.log('\nQ: 2. What is the total number of conversions on plants?');
   let plantsAsInitiative = 0;
   for (let key in campaigns) {
@@ -136,15 +138,52 @@ const analyze = () => {
   }
   console.log(`A: ${plantsAsInitiative}`); // 1996
 
-  console.log('Q: 3. What audience, asset combination had the least expensive conversions?');
+
+  // Q3:
+  console.log('\nQ: 3. What audience, asset combination had the least expensive conversions?');
+  let audienceAsset = {};
+  for (let key in campaigns) {
+    let entry = campaigns[key];
+    let conversions = 0;
+    if (entry.actions.hasOwnProperty('conversions')) {
+      conversions = entry.actions.conversions;
+    }
+    let combination = key.split('_').slice(1).join('_');
+    if (audienceAsset.hasOwnProperty(combination)) {
+      // add to it
+      audienceAsset[combination].spend += entry.spend;
+      audienceAsset[combination].conversions += conversions;
+    } else {
+      // create it
+      audienceAsset[combination] = {spend: entry.spend, conversions,};
+    }
+  }
+  let cheapestCombo = ['', Infinity];
+  for (let key in audienceAsset) {
+    let combination = audienceAsset[key];
+    let pricePerConversion = combination.spend / combination.conversions;
+    if (pricePerConversion < cheapestCombo[1]) {
+      cheapestCombo = [key, pricePerConversion];
+    }
+  }
+  console.log(`A: ${cheapestCombo[0]} with $${Math.round(cheapestCombo[1] * 100) / 100}/conversion`);
 
 
-  // for (let entry in campaigns) {
-  //   // console.log(campaigns[entry].campaign.initiative);
-  //   if (campaigns[entry].campaign.audience === 'plants') {
-  //     console.log(campaigns[entry].campaign);
-  //   }
-  // }
+  // Q4:
+  console.log('\nQ: 4. What was the total cost per video view?');
+  let totalSpend = 0;
+  let totalViews = 0;
+  for (let key in campaigns) {
+    let campaign = campaigns[key];
+    if (campaign.object_type === 'video') {
+      if (campaign.actions.hasOwnProperty('views')) {
+        totalSpend += campaign.spend;
+        totalViews += campaign.actions.views;
+      }
+    }
+  }
+  let CPV = Math.round((totalSpend / totalViews) * 100) / 100;
+  console.log(`A: $${CPV}/view`);
 }
 
 main();
@@ -163,14 +202,7 @@ main();
 //     spend: 0,
 //     impressions: 0,
 //     actions: [],
+//     object_type: video,
 //   },
 //   etc: {},
 // }
-
-
-
-          // if (!campaigns[data.campaign].actions[entry.action]) {
-          //   campaigns[data.campaign].actions[entry.action] = 1;
-          // } else {
-          //   campaigns[data.campaign].actions[entry.action] =  + 1;
-          // }
