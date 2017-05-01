@@ -1,4 +1,20 @@
 /*
+ANSWERS:
+Q: 1. How many unique campaigns ran in February?
+A: 233
+
+Q: 2. What is the total number of conversions on plants?
+A: 1996
+
+Q: 3. What audience, asset combination had the least expensive conversions?
+A: lion_valley with $44.48/conversion
+
+Q: 4. What was the total cost per video view?
+A: $48.49/view
+*/
+
+
+/*
 INSTRUCTIONS
 
 The goal of this exercise is to simulate the creation of a report, by merging two datasets together, and drawing some basic insights. Given the stated assumptions, please provide your answers to the following 4 questions, as well as your code. Use of python, particularly with Pandas, is encouraged.
@@ -26,10 +42,11 @@ Questions:
 4.	What was the total cost per video view?
 */
 
-// campaign,date,spend,impressions,actions
 
-// let campaigns = new Set();
 
+/*
+CODE (JavaScript ES6 and node.js)
+*/
 const csv = require('fast-csv');
 let campaigns = {};
 
@@ -99,12 +116,6 @@ const readFile1 = () => {
       campaigns[data.campaign] = entry;
       JSON.parse(data.actions).forEach(entry => {
         if (entry.hasOwnProperty('x') || entry.hasOwnProperty('y')) {
-          // console.log(entry);
-          // if (!campaigns[data.campaign].actions.hasOwnProperty(entry.action)) {
-          //   campaigns[data.campaign].actions[entry.action] = 1;
-          // } else {
-          //   campaigns[data.campaign].actions[entry.action] += 1;
-          // }
           campaigns[data.campaign].actions[entry.action] = Number(campaigns[data.campaign].actions[entry.action]) + 1 || 1;
         }
       });
@@ -187,7 +198,6 @@ const analyze = () => {
 }
 
 main();
-
 
 
 // let example = {
